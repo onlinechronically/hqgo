@@ -1,4 +1,4 @@
-package main
+package hqtrivia
 
 import (
 	"encoding/json"
@@ -10,12 +10,16 @@ type Verification struct {
 	verificationId string
 }
 
+func (v *Verification) GetID() string {
+	return v.verificationId
+}
+
 func CreateVerification(phoneNumber string) (Verification, error) {
 	body, err := json.Marshal(VerificationStart{Method: "sms", Phone: phoneNumber})
 	if err != nil {
 		return Verification{}, err
 	}
-	verificationResponse := request("POST", fmt.Sprintf("%s/verifications/verify-existing-phone", apiURL), body, "")
+	verificationResponse, _ := request("POST", fmt.Sprintf("%s/verifications/verify-existing-phone", apiURL), body, "")
 	if verificationResponse["error"] != nil {
 		return Verification{}, errors.New(verificationResponse["error"].(string))
 	}
@@ -27,7 +31,7 @@ func (verification *Verification) Verify(code string) (User, bool, error) {
 	if err != nil {
 		return User{}, false, err
 	}
-	verificationResponse := request("POST", fmt.Sprintf("%s/verifications/%s", apiURL, verification.verificationId), body, "")
+	verificationResponse, _ := request("POST", fmt.Sprintf("%s/verifications/%s", apiURL, verification.verificationId), body, "")
 	if verificationResponse["error"] != nil {
 		return User{}, false, errors.New(verificationResponse["error"].(string))
 	}
@@ -54,9 +58,45 @@ func checkUsername(username string, isReferral bool) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	checkResponse := request("POST", fmt.Sprintf("%s%s", apiURL, endpoint), body, "")
+	checkResponse, _ := request("POST", fmt.Sprintf("%s%s", apiURL, endpoint), body, "")
 	if checkResponse["error"] != nil {
 		return false, nil
 	}
 	return true, nil
+}
+
+func (verification *Verification) RegisterUser(username string, referringUsername string) (User, error) {
+	var referralValid bool
+	var err error
+	usernameAvailable, err := checkUsername(username, false)
+	if err != nil {
+		return User{}, err
+	}
+	if referringUsername != "" {
+		referralValid, err = checkUsername(referringUsername, true)
+		if err != nil {
+			return User{}, err
+		}
+	}
+	if !usernameAvailable {
+		return User{}, errors.New("The requested username is not available")
+	}
+	if !referralValid && referringUsername != "" {
+		return User{}, errors.New("The provided referral code is not valid")
+	}
+	var bodyStruct *RegisterAccount
+	if referringUsername == "" {
+		bodyStruct = &RegisterAccount{VerificationID: verification.verificationId, Username: username, Country: "us", Locale: "en", TimeZone: "America/New_York"}
+	} else {
+		bodyStruct = &RegisterAccount{VerificationID: verification.verificationId, Username: username, ReferringUsername: referringUsername, Country: "us", Locale: "en", TimeZone: "America/New_York"}
+	}
+	registerBody, err := json.Marshal(bodyStruct)
+	if err != nil {
+		return User{}, err
+	}
+	registerRes, statusCode := request("POST", fmt.Sprintf("%s/users", apiURL), registerBody, "")
+	if statusCode != 200 {
+		return User{}, errors.New("There was an error registering")
+	}
+	return User{loginToken: registerRes["loginToken"].(string), bearerToken: registerRes["authToken"].(string), id: int(registerRes["userId"].(float64)), username: registerRes["username"].(string)}, nil
 }
