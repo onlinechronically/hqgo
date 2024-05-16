@@ -1,4 +1,4 @@
-package main
+package hqtrivia
 
 import (
 	"bytes"
@@ -8,6 +8,12 @@ import (
 	"log"
 	"net/http"
 )
+
+var apiURL string
+
+func SetAPIUrl(Url string) {
+	apiURL = Url
+}
 
 // Given an error, this function forces the error (if existant to cause a fatal error), with the option of a custom message str
 func fatalError(err error, str string) {
@@ -43,8 +49,8 @@ func responseBody(res *http.Response) map[string]interface{} {
 }
 
 // Given an HTTP method, endpoint, some array of bytes body, and a token bearerToken (or "" for none),
-// This function will execute the request and return the deserialized json in a hashmap from strings to interfaces
-func request(method string, endpoint string, body []byte, bearerToken string) map[string]interface{} {
+// This function will execute the request and return the deserialized json in a hashmap from strings to interfaces, as well as the HTTP status code
+func request(method string, endpoint string, body []byte, bearerToken string) (map[string]interface{}, int) {
 	var req *http.Request
 	var err error
 	if len(body) > 1 {
@@ -56,5 +62,5 @@ func request(method string, endpoint string, body []byte, bearerToken string) ma
 	setHeaders(req, body != nil, bearerToken)
 	response, err := http.DefaultClient.Do(req)
 	fatalError(err, "HTTP Request (Response)")
-	return responseBody(response)
+	return responseBody(response), response.StatusCode
 }
