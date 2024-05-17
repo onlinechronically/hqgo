@@ -19,7 +19,10 @@ func CreateVerification(phoneNumber string) (Verification, error) {
 	if err != nil {
 		return Verification{}, err
 	}
-	verificationResponse, _ := request("POST", fmt.Sprintf("%s/verifications/verify-existing-phone", apiURL), body, "")
+	verificationResponse, _, err := request("POST", fmt.Sprintf("%s/verifications/verify-existing-phone", apiURL), body, "")
+	if err != nil {
+		return Verification{}, err
+	}
 	if verificationResponse["error"] != nil {
 		return Verification{}, errors.New(verificationResponse["error"].(string))
 	}
@@ -31,7 +34,10 @@ func (verification *Verification) Verify(code string) (User, bool, error) {
 	if err != nil {
 		return User{}, false, err
 	}
-	verificationResponse, _ := request("POST", fmt.Sprintf("%s/verifications/%s", apiURL, verification.verificationId), body, "")
+	verificationResponse, _, err := request("POST", fmt.Sprintf("%s/verifications/%s", apiURL, verification.verificationId), body, "")
+	if err != nil {
+		return User{}, false, err
+	}
 	if verificationResponse["error"] != nil {
 		return User{}, false, errors.New(verificationResponse["error"].(string))
 	}
@@ -58,7 +64,10 @@ func checkUsername(username string, isReferral bool) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	checkResponse, _ := request("POST", fmt.Sprintf("%s%s", apiURL, endpoint), body, "")
+	checkResponse, _, err := request("POST", fmt.Sprintf("%s%s", apiURL, endpoint), body, "")
+	if err != nil {
+		return false, err
+	}
 	if checkResponse["error"] != nil {
 		return false, nil
 	}
@@ -94,7 +103,10 @@ func (verification *Verification) RegisterUser(username string, referringUsernam
 	if err != nil {
 		return User{}, err
 	}
-	registerRes, statusCode := request("POST", fmt.Sprintf("%s/users", apiURL), registerBody, "")
+	registerRes, statusCode, err := request("POST", fmt.Sprintf("%s/users", apiURL), registerBody, "")
+	if err != nil {
+		return User{}, err
+	}
 	if statusCode != 200 {
 		return User{}, errors.New("There was an error registering")
 	}

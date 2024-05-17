@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 )
 
@@ -13,16 +12,6 @@ var apiURL string
 
 func SetAPIUrl(Url string) {
 	apiURL = Url
-}
-
-// Given an error, this function forces the error (if existant to cause a fatal error), with the option of a custom message str
-func fatalError(err error, str string) {
-	if err != nil {
-		if str == "" {
-			str = err.Error()
-		}
-		log.Fatalf("An error marked as fatal has occurred: %s", str)
-	}
 }
 
 // Given a request pointer req, a boolean basBody (indicating whether the request has a body), and a token bearerToken (or "" for none),
@@ -39,18 +28,22 @@ func setHeaders(req *http.Request, hasBody bool, bearerToken string) {
 }
 
 // Given a response pointer res, this function deserializes the response body and returns a hashmap from strings to interfaces
-func responseBody(res *http.Response) map[string]interface{} {
+func responseBody(res *http.Response) (map[string]interface{}, error) {
 	body, err := io.ReadAll(res.Body) // try converting the response body into bytes
-	fatalError(err, "Byte Conversion (Response Body)")
+	if err != nil {
+		return nil, err
+	}
 	var deserializedBody map[string]interface{}
 	err = json.Unmarshal(body, &deserializedBody) // try converting the bytes to kv pairs
-	fatalError(err, "JSON Deserialization (Response Body)")
-	return deserializedBody
+	if err != nil {
+		return nil, err
+	}
+	return deserializedBody, nil
 }
 
 // Given an HTTP method, endpoint, some array of bytes body, and a token bearerToken (or "" for none),
 // This function will execute the request and return the deserialized json in a hashmap from strings to interfaces, as well as the HTTP status code
-func request(method string, endpoint string, body []byte, bearerToken string) (map[string]interface{}, int) {
+func request(method string, endpoint string, body []byte, bearerToken string) (map[string]interface{}, int, error) {
 	var req *http.Request
 	var err error
 	if len(body) > 1 {
@@ -58,9 +51,17 @@ func request(method string, endpoint string, body []byte, bearerToken string) (m
 	} else {
 		req, err = http.NewRequest(method, endpoint, nil)
 	}
-	fatalError(err, "HTTP Request (Creation)")
+	if err != nil {
+		return nil, -1, err
+	}
 	setHeaders(req, body != nil, bearerToken)
 	response, err := http.DefaultClient.Do(req)
-	fatalError(err, "HTTP Request (Response)")
-	return responseBody(response), response.StatusCode
+	if err != nil {
+		return nil, -1, err
+	}
+	respBody, err := responseBody(response)
+	if err != nil {
+		return nil, -1, err
+	}
+	return respBody, response.StatusCode, nil
 }

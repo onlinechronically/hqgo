@@ -13,9 +13,9 @@ type User struct {
 	username    string
 }
 
-func (u *User) request(method string, endpoint string, body []byte) (map[string]interface{}, int) {
+func (u *User) request(method string, endpoint string, body []byte) (map[string]interface{}, int, error) {
 	if u.bearerToken == "" {
-		fatalError(errors.New("You must be logged in to do this"), "")
+		return nil, -1, errors.New("You must be logged in to do this")
 	}
 	return request(method, endpoint, body, u.bearerToken)
 }
@@ -25,7 +25,10 @@ func (u *User) RefreshTokens() error {
 	if err != nil {
 		return err
 	}
-	tokenReq, _ := request("POST", fmt.Sprintf("%s/tokens", apiURL), body, "")
+	tokenReq, _, err := request("POST", fmt.Sprintf("%s/tokens", apiURL), body, "")
+	if err != nil {
+		return err
+	}
 	if tokenReq["error"] != nil || tokenReq == nil {
 		return errors.New(tokenReq["error"].(string))
 	}
@@ -35,7 +38,10 @@ func (u *User) RefreshTokens() error {
 }
 
 func (u *User) Powerups() (int, int, int, error) {
-	usersMe, _ := u.request("GET", fmt.Sprintf("%s/users/me", apiURL), nil)
+	usersMe, _, err := u.request("GET", fmt.Sprintf("%s/users/me", apiURL), nil)
+	if err != nil {
+		return -1, -1, -1, err
+	}
 	if usersMe["error"] != nil {
 		return -1, -1, -1, errors.New(usersMe["error"].(string))
 	}
