@@ -35,3 +35,8 @@ type RegisterAccount struct {
 	Username          string `json:"username"`
 	VerificationID    string `json:"verificationId"`
 }
+
+// PATCH /users/me
+type ChangeUsername struct {
+	Username string `json:"username"`
+}

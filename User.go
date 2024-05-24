@@ -51,3 +51,24 @@ func (u *User) Powerups() (int, int, int, error) {
 	}
 	return int(items["lives"].(float64)), int(usersMe["erase1s"].(float64)), int(items["superSpins"].(float64)), nil
 }
+
+func (u *User) ChangeUsername(username string) error {
+	isValid, err := checkUsername(username, false)
+	if err != nil {
+		return err
+	} else if !isValid {
+		return errors.New("Invalid Username")
+	}
+	body, err := json.Marshal(ChangeUsername{Username: username})
+	if err != nil {
+		return err
+	}
+	resp, _, err := u.request("PATCH", fmt.Sprintf("%s/users/me", apiURL), body)
+	if err != nil {
+		return err
+	}
+	if resp["error"] != nil {
+		return errors.New(resp["error"].(string))
+	}
+	return nil
+}
