@@ -72,3 +72,16 @@ func (u *User) ChangeUsername(username string) error {
 	}
 	return nil
 }
+
+func (u *User) EasterEgg() error {
+	resp, statusCode, err := u.request("POST", fmt.Sprintf("%s/easter-eggs/makeItRain", apiURL), nil)
+	if err != nil {
+		return err
+	} else if statusCode != 200 {
+		return errors.New("Too Recent")
+	} else if resp["error"] != nil {
+		return errors.New(resp["error"].(string))
+	} else {
+		return nil
+	}
+}
