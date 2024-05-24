@@ -85,3 +85,11 @@ func (u *User) EasterEgg() error {
 		return nil
 	}
 }
+
+func (u *User) Achievements() (map[string]interface{}, error) {
+	resp, _, err := u.request("GET", fmt.Sprintf("%s/achievements/v2/me", apiURL), nil)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
