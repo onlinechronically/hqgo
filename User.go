@@ -20,6 +20,19 @@ func (u *User) request(method string, endpoint string, body []byte) (map[string]
 	return request(method, endpoint, body, u.bearerToken)
 }
 
+func (u *User) UsersMe() (map[string]interface{}, error) {
+	usersMe, _, err := u.request("GET", fmt.Sprintf("%s/users/me", apiURL), nil)
+	if err != nil {
+		return nil, err
+	} else if usersMe["error"] != nil {
+		return nil, errors.New(usersMe["error"].(string))
+	}
+	if usersMe["username"] != u.username {
+		u.username = usersMe["username"].(string)
+	}
+	return usersMe, err
+}
+
 func (u *User) RefreshTokens() error {
 	body, err := json.Marshal(RefreshTokens{Token: u.loginToken})
 	if err != nil {
@@ -38,12 +51,9 @@ func (u *User) RefreshTokens() error {
 }
 
 func (u *User) Powerups() (int, int, int, error) {
-	usersMe, _, err := u.request("GET", fmt.Sprintf("%s/users/me", apiURL), nil)
+	usersMe, err := u.UsersMe()
 	if err != nil {
 		return -1, -1, -1, err
-	}
-	if usersMe["error"] != nil {
-		return -1, -1, -1, errors.New(usersMe["error"].(string))
 	}
 	items := usersMe["items"].(map[string]interface{})
 	if items == nil {
