@@ -62,6 +62,14 @@ func (u *User) Powerups() (int, int, int, error) {
 	return int(items["lives"].(float64)), int(usersMe["erase1s"].(float64)), int(items["superSpins"].(float64)), nil
 }
 
+func (u *User) Coins() (int, error) {
+	usersMe, err := u.UsersMe()
+	if err != nil {
+		return -1, err
+	}
+	return int(usersMe["coins"].(float64)), nil
+}
+
 func (u *User) ChangeUsername(username string) error {
 	isValid, err := checkUsername(username, false)
 	if err != nil {
