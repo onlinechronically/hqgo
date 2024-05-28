@@ -65,3 +65,11 @@ func request(method string, endpoint string, body []byte, bearerToken string) (m
 	}
 	return respBody, response.StatusCode, nil
 }
+
+func PublicConfig() (map[string]interface{}, error) {
+	resp, _, err := request("GET", fmt.Sprintf("%s/config/public", apiURL), nil, "")
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}

@@ -111,3 +111,17 @@ func (u *User) Achievements() (map[string]interface{}, error) {
 	}
 	return resp, nil
 }
+
+func (u *User) Config(public bool) (map[string]interface{}, error) {
+	var url string
+	if public {
+		url = fmt.Sprintf("%s/config/public", apiURL)
+	} else {
+		url = fmt.Sprintf("%s/config", apiURL)
+	}
+	resp, _, err := u.request("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
