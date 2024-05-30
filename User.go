@@ -13,6 +13,17 @@ type User struct {
 	username    string
 }
 
+type Payout struct{}
+
+type Opt struct {
+	title       string `json:"title"`
+	opt         string `json:"opt"`
+	inMessage   string `json:"in"`
+	outMessage  string `json:"out"`
+	description string `json:"onboardingDescription"`
+	opted       bool   `json:"opted"`
+}
+
 func (u *User) request(method string, endpoint string, body []byte) (map[string]interface{}, int, error) {
 	if u.bearerToken == "" {
 		return nil, -1, errors.New("You must be logged in to do this")
@@ -120,6 +131,39 @@ func (u *User) Config(public bool) (map[string]interface{}, error) {
 		url = fmt.Sprintf("%s/config", apiURL)
 	}
 	resp, _, err := u.request("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (u *User) Opts() (opts []Opt, _ error) {
+	resp, _, err := u.request("GET", fmt.Sprintf("%s/opt-in", apiURL), nil)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(resp)
+	for _, opt := range resp["opts"].([]interface{}) {
+		fmt.Println(opt)
+		opt, isValid := opt.(map[string]interface{})
+		if isValid {
+			return opts, errors.New("Invalid Data")
+		}
+		newOpt := Opt{title: opt["title"].(string), opt: opt["opt"].(string), inMessage: opt["in"].(string), outMessage: opt["out"].(string), description: opt["onboardingDescription"].(string), opted: opt["opted"].(bool)}
+		opts = append(opts, newOpt)
+	}
+	return opts, nil
+}
+
+func (u *User) OptIn() (map[string]interface{}, error) {
+	resp, _, err := u.request("POST", fmt.Sprintf("%s/opt-in", apiURL), nil)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+func (u *User) Sample() (map[string]interface{}, error) {
+	resp, _, err := u.request("GET", fmt.Sprintf("%s/opt-in", apiURL), nil)
 	if err != nil {
 		return nil, err
 	}

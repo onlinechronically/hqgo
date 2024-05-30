@@ -40,3 +40,9 @@ type RegisterAccount struct {
 type ChangeUsername struct {
 	Username string `json:"username"`
 }
+
+// POST /opt-in
+type OptIn struct {
+	Opt   string `json:"opt"`
+	Value bool   `json:"value"`
+}
